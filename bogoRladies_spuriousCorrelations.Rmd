@@ -1,0 +1,266 @@
+---
+title: "Penyebab Perceraian"
+author: "Sabhrina Gita Aninta"
+date: "R-Ladies Bogor 2021/10/30 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["default", "rladies", "rladies-fonts"]
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      self_contained: true
+
+---
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+library(rethinking)
+library(jtools)
+library(patchwork)
+library(dagitty)
+data("WaffleDivorce")
+d<-WaffleDivorce
+precis(d)
+?WaffleDivorce
+theme_lf<-theme(axis.text = element_text(size=14),
+        axis.title = element_text(size=16),
+        legend.text = element_text(size=10),
+        axis.text.y = element_text(size=14),
+        legend.title = element_text(size=11),
+        legend.position = "bottom")
+
+d$D<-standardize(d$Divorce)
+d$M<-standardize(d$Marriage)
+d$A<-standardize(d$MedianAgeMarriage)
+```
+
+Data dari package `rethinking` memuat jumlah Waffle House, frekuensi perceraian per 1000 dewasa per negara bagian di Amerika Serikat, dan beberapa aspek demografi dari negara bagian tersebut:
+
+1. Location : State name
+1. Loc : State abbreviation
+1. Population : 2010 population in millions
+1. MedianAgeMarriage: 2005-2010 median age at marriage
+1. Marriage : 2009 marriage rate per 1000 adults
+1. Marriage.SE : Standard error of rate
+1. Divorce : 2009 divorce rate per 1000 adults
+1. Divorce.SE : Standard error of rate
+1. WaffleHouses : Number of diners
+1. South : 1 indicates Southern State
+1. Slaves1860 : Number of slaves in 1860 census
+1. Population1860 : Population from 1860 census
+1. PropSlaves1860 : Proportion of total population that were slaves in 1860
+
+
+---
+# Ketika penjual wafel menyebabkan perceraian
+
+```{r,include=FALSE, echo=FALSE}
+mod_0<-lm(Divorce~WaffleHouses,d)
+summary(mod_0)
+```
+
+```{r, fig.width=6, fig.height=6, echo=FALSE, fig.align='center'}
+plot(Divorce~WaffleHouses, d,
+     col=col.alpha("black",0.7), 
+     cex=1.5, cex.lab=1.5, cex.axis=1.5,
+     xlab="Waffle House per million",
+     ylab="Divorce rate")
+abline(a=9.460231,b=0.007043)
+```
+
+---
+# Usia dan pernikahan
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+par(mfrow=c(1,2))
+plot(Divorce~Marriage, d, col=col.alpha("black",0.7), 
+     cex=1.5, cex.lab=1.5, cex.axis=1.5,
+     xlab="Marriage rate",
+     ylab="Divorce rate")
+abline(a=6.08404,b=0.17918)
+plot(Divorce~MedianAgeMarriage, d, col=col.alpha("black",0.7), 
+     cex=1.5, cex.lab=1.5, cex.axis=1.5,
+     xlab="Median age marriage",
+     ylab="Divorce rate")
+abline(a=32.4703,b=-0.8744)
+```
+
+---
+# Perhatikan ukuran efek pernikahan dan usia
+
+```{r}
+mod1a<-lm(Divorce~Marriage,d)
+summary(mod1a)
+```
+
+---
+# Perhatikan ukuran efek pernikahan dan usia
+
+```{r}
+mod1b<-lm(Divorce~MedianAgeMarriage,d)
+summary(mod1b)
+```
+
+---
+# Yang kira-kira sedang terjadi ...
+
+Usia memengaruhi pernikahan.
+
+Usia memengaruhi perceraian.
+
+Usia memengaruhi perceraian melalui pernikahan.
+
+```{r, echo=FALSE, fig.asp=0.5}
+dag5.1<-dagitty("dag{A->D; A->M;M->D}")
+coordinates(dag5.1)<-list(x=c(A=0,D=1,M=2),y=c(A=0,D=1,M=0))
+DMA_dag2<-dagitty('dag{D<-A->M}')
+coordinates(DMA_dag2)<-list(x=c(A=0,D=1,M=2),y=c(A=0,D=1,M=0))
+
+par(mfrow=c(1,2))
+drawdag(dag5.1,cex=2,lwd=2)
+drawdag(DMA_dag2,cex=2,lwd=2)
+```
+
+```{r, include=FALSE}
+# Testable implications
+DMA_dag2<-dagitty('dag{D<-A->M}')
+impliedConditionalIndependencies(DMA_dag2)
+DMA_dag1<-dagitty('dag{D<-A->M->D}')
+impliedConditionalIndependencies(DMA_dag1)
+```
+
+---
+# Bagaimana kalo kita modelkan dua-duanya?
+
+```{r}
+mod1<-lm(Divorce~Marriage+MedianAgeMarriage,d)
+summary(mod1)
+```
+
+---
+# Plot komparasi efek variabel di ketiga model
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=6}
+plot_summs(mod1a,mod1b,mod1,
+           model.names = c("Marriage", 
+                           "Age", 
+                           "Marriage*Age"))+theme_lf
+```
+
+---
+# Apa yang terjadi?
+
+Frekuensi pernikahan efeknya tinggi jika dimodelkan sendirian dan rendah ketika dimodelkan bersama usia. 
+
+Efek usia tidak berubah dengan dan tanpa frekuensi pernikahan.
+
+Artinya, ada sesuatu antara usia dan frekuensi pernikahan
+
+---
+# Korelasi antara pernikahan dengan usia
+
+```{r, echo=FALSE, fig.width=6, fig.height=6, fig.align='center'}
+plot(Marriage~MedianAgeMarriage, d, col=col.alpha("black",0.7), 
+     cex=1, cex.lab=1.5, cex.axis=1.5)
+abline(a=77.4887,b=-2.021)
+```
+
+---
+# Pengaruh usia & pernikahan setelah regresi
+
+```{r}
+mod2a<-lm(Marriage~MedianAgeMarriage,d)
+mod2b<-lm(MedianAgeMarriage~Marriage,d)
+mar_resid<-resid(mod2a); age_resid<-resid(mod2b)
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=5, fig.align='center'}
+par(mfrow=c(1,2))
+mod2a1<-lm(d$Divorce~mar_resid)
+mod2b1<-lm(d$Divorce~age_resid)
+
+plot(d$Divorce~mar_resid, col=col.alpha("black",0.7), 
+     cex=1, cex.lab=1.5, cex.axis=1.5,
+     xlab="Marriage rate residuals",
+     ylab="Divorce rate")
+abline(a=9.688,b=-0.05686)
+plot(d$Divorce~age_resid, col=col.alpha("black",0.7), 
+     cex=1, cex.lab=1.5, cex.axis=1.5,
+     xlab="Age at marriage residuals",
+     ylab="Divorce rate")
+abline(a=9.688,b=-0.9996)
+```
+---
+
+class: center, middle
+
+# Perhatian:
+# Residual hanya parameter, bukan data! 
+## Plot barusan hanya mengilustrasikan apa yang terjadi dalam sebuah model regresi
+
+---
+# Simulasi hubungan korelasi antara usia, pernikahan, dan perceraian
+
+```{r}
+
+N<-50
+age<-rnorm(N)
+mar<-rnorm(N, -age)
+div<-rnorm(N, -age)
+
+mod3<-lm(div~age+mar)
+mod3a<-lm(div~mar)
+mod3b<-lm(div~age)
+```
+
+---
+# Simulasi hubungan korelasi antara usia, pernikahan, dan perceraian
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+plot_summs(mod3a,mod3b,mod3,
+           model.names = c("Marriage", 
+                           "Age", 
+                           "Marriage*Age")) +theme_lf
+```
+
+---
+# Perbandingan simulasi dan data asli
+
+```{r,echo=FALSE, fig.width=10, fig.height=6}
+
+real<-plot_summs(mod1a,mod1b,mod1,
+           model.names = c("Marriage_R", 
+                           "Age_R", 
+                           "Marriage*Age_R"), size=3)+theme_lf
+sim<-plot_summs(mod3a,mod3b,mod3,
+           model.names = c("Marriage_S", 
+                           "Age_S", 
+                           "Marriage*Age_S"))+theme_lf
+real+(sim+theme(axis.text.y = element_blank()))
+```
+
+
+---
+# Simpulan
+
+Setelah memahami bahwa "korelasi tidak sama dengan kausasi", tanyakan lebih lanjut, apa yang dapat menghadirkan korelasi?
+
+Uji statistik bisa menyesatkan tanpa pengetahuan tentang data itu sendiri; jangan pernah bergerak tanpa hipotesis!
+
+Melihat hubungan antara residu dari variabel yang berkorelasi bisa menjelaskan bagaimana setiap variabel penjelas berkontribusi dalam menjelaskan variabel respons.
+
+Kalo masih ada waktu: analisis `data("WaffleDivorce")` dari package `rethinking`, eksplor variabel lainnya atau sekedar ulangi analisis ini, dan buat laporan docx/html/presentasi dengan Rmarkdown.
+
+.footnote[
+Referensi: McElreath, R. 2020. Statistical Rethinking 2nd Edition. CRC Press.
+]
+
+---
+
+class: center, middle
+
+# Tertarik dengan materi semacam ini?
+### Materi "Statictical Rethinking" Richard McElreath dapat diakses di https://github.com/rmcelreath/stat_rethinking_2020
+
+

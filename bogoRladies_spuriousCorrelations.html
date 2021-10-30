@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Penyebab Perceraian</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sabhrina Gita Aninta" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Penyebab Perceraian
+### Sabhrina Gita Aninta
+### R-Ladies Bogor 2021/10/30 (updated: 2021-10-30)
+
+---
+
+
+
+
+Data dari package `rethinking` memuat jumlah Waffle House, frekuensi perceraian per 1000 dewasa per negara bagian di Amerika Serikat, dan beberapa aspek demografi dari negara bagian tersebut:
+
+1. Location : State name
+1. Loc : State abbreviation
+1. Population : 2010 population in millions
+1. MedianAgeMarriage: 2005-2010 median age at marriage
+1. Marriage : 2009 marriage rate per 1000 adults
+1. Marriage.SE : Standard error of rate
+1. Divorce : 2009 divorce rate per 1000 adults
+1. Divorce.SE : Standard error of rate
+1. WaffleHouses : Number of diners
+1. South : 1 indicates Southern State
+1. Slaves1860 : Number of slaves in 1860 census
+1. Population1860 : Population from 1860 census
+1. PropSlaves1860 : Proportion of total population that were slaves in 1860
+
+
+---
+# Ketika penjual wafel menyebabkan perceraian
+
+
+
+&lt;img src="bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-3-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Usia dan pernikahan
+
+![](bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+
+---
+# Perhatikan ukuran efek pernikahan dan usia
+
+
+```r
+mod1a&lt;-lm(Divorce~Marriage,d)
+summary(mod1a)
+```
+
+```
+## 
+## Call:
+## lm(formula = Divorce ~ Marriage, data = d)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.0068 -1.2173  0.1214  1.1805  4.4971 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  6.08404    1.31337   4.632 2.78e-05 ***
+## Marriage     0.17918    0.06418   2.792  0.00751 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.706 on 48 degrees of freedom
+## Multiple R-squared:  0.1397,	Adjusted R-squared:  0.1218 
+## F-statistic: 7.793 on 1 and 48 DF,  p-value: 0.007507
+```
+
+---
+# Perhatikan ukuran efek pernikahan dan usia
+
+
+```r
+mod1b&lt;-lm(Divorce~MedianAgeMarriage,d)
+summary(mod1b)
+```
+
+```
+## 
+## Call:
+## lm(formula = Divorce ~ MedianAgeMarriage, data = d)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -4.4836 -0.9813 -0.0348  0.9932  3.6146 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)        32.4703     4.4210   7.345 2.18e-09 ***
+## MedianAgeMarriage  -0.8744     0.1695  -5.159 4.68e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.476 on 48 degrees of freedom
+## Multiple R-squared:  0.3567,	Adjusted R-squared:  0.3433 
+## F-statistic: 26.61 on 1 and 48 DF,  p-value: 4.682e-06
+```
+
+---
+# Yang kira-kira sedang terjadi ...
+
+Usia memengaruhi pernikahan.
+
+Usia memengaruhi perceraian.
+
+Usia memengaruhi perceraian melalui pernikahan.
+
+![](bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+
+
+---
+# Bagaimana kalo kita modelkan dua-duanya?
+
+
+```r
+mod1&lt;-lm(Divorce~Marriage+MedianAgeMarriage,d)
+summary(mod1)
+```
+
+```
+## 
+## Call:
+## lm(formula = Divorce ~ Marriage + MedianAgeMarriage, data = d)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -4.5177 -0.9828 -0.0458  0.9224  3.2818 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)       36.87665    7.66104   4.814 1.58e-05 ***
+## Marriage          -0.05686    0.08053  -0.706 0.483594    
+## MedianAgeMarriage -0.99965    0.24593  -4.065 0.000182 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.483 on 47 degrees of freedom
+## Multiple R-squared:  0.3634,	Adjusted R-squared:  0.3364 
+## F-statistic: 13.42 on 2 and 47 DF,  p-value: 2.455e-05
+```
+
+---
+# Plot komparasi efek variabel di ketiga model
+
+![](bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+
+---
+# Apa yang terjadi?
+
+Frekuensi pernikahan efeknya tinggi jika dimodelkan sendirian dan rendah ketika dimodelkan bersama usia. 
+
+Efek usia tidak berubah dengan dan tanpa frekuensi pernikahan.
+
+Artinya, ada sesuatu antara usia dan frekuensi pernikahan
+
+---
+# Korelasi antara pernikahan dengan usia
+
+&lt;img src="bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Pengaruh usia &amp; pernikahan setelah regresi
+
+
+```r
+mod2a&lt;-lm(Marriage~MedianAgeMarriage,d)
+mod2b&lt;-lm(MedianAgeMarriage~Marriage,d)
+mar_resid&lt;-resid(mod2a); age_resid&lt;-resid(mod2b)
+```
+
+&lt;img src="bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-13-1.png" style="display: block; margin: auto;" /&gt;
+---
+
+class: center, middle
+
+# Perhatian:
+# Residual hanya parameter, bukan data! 
+## Plot barusan hanya mengilustrasikan apa yang terjadi dalam sebuah model regresi
+
+---
+# Simulasi hubungan korelasi antara usia, pernikahan, dan perceraian
+
+
+```r
+N&lt;-50
+age&lt;-rnorm(N)
+mar&lt;-rnorm(N, -age)
+div&lt;-rnorm(N, -age)
+
+mod3&lt;-lm(div~age+mar)
+mod3a&lt;-lm(div~mar)
+mod3b&lt;-lm(div~age)
+```
+
+---
+# Simulasi hubungan korelasi antara usia, pernikahan, dan perceraian
+
+![](bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+
+---
+# Perbandingan simulasi dan data asli
+
+![](bogoRladies_spuriousCorrelations_files/figure-html/unnamed-chunk-16-1.png)&lt;!-- --&gt;
+
+
+---
+# Simpulan
+
+Setelah memahami bahwa "korelasi tidak sama dengan kausasi", tanyakan lebih lanjut, apa yang dapat menghadirkan korelasi?
+
+Uji statistik bisa menyesatkan tanpa pengetahuan tentang data itu sendiri; jangan pernah bergerak tanpa hipotesis!
+
+Melihat hubungan antara residu dari variabel yang berkorelasi bisa menjelaskan bagaimana setiap variabel penjelas berkontribusi dalam menjelaskan variabel respons.
+
+Kalo masih ada waktu: analisis `data("WaffleDivorce")` dari package `rethinking`, eksplor variabel lainnya atau sekedar ulangi analisis ini, dan buat laporan docx/html/presentasi dengan Rmarkdown.
+
+.footnote[
+Referensi: McElreath, R. 2020. Statistical Rethinking 2nd Edition. CRC Press.
+]
+
+---
+
+class: center, middle
+
+# Tertarik dengan materi semacam ini?
+### Materi "Statictical Rethinking" Richard McElreath dapat diakses di https://github.com/rmcelreath/stat_rethinking_2020
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"self_contained": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
